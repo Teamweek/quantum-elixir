@@ -20,14 +20,16 @@ defmodule Quantum do
   @typedoc "A job options can be defined as list or map"
   @type opts :: list | map | fun0
 
-  @quantum if Application.get_env(:quantum, :global?, false),
-              do: {:global, Quantum},
-              else: Quantum
+  def quantum do
+    if Application.get_env(:quantum, :global?, false),
+      do: {:global, Quantum},
+      else: Quantum
+  end
 
   @doc "Adds a new unnamed job"
   @spec add_job(job) :: :ok
   def add_job(job) do
-    GenServer.call(@quantum, {:add, Normalizer.normalize({nil, job})}, timeout())
+    GenServer.call(quantum(), {:add, Normalizer.normalize({nil, job})}, timeout())
   end
 
   @doc "Adds a new named job"
@@ -37,20 +39,20 @@ defmodule Quantum do
     if name && find_job(name) do
       :error
     else
-      GenServer.call(@quantum, {:add, {name, job}}, timeout())
+      GenServer.call(quantum(), {:add, {name, job}}, timeout())
     end
   end
 
   @doc "Deactivates a job by name"
   @spec deactivate_job(expr) :: :ok
   def deactivate_job(n) do
-    GenServer.call(@quantum, {:change_state, n, :inactive}, timeout())
+    GenServer.call(quantum(), {:change_state, n, :inactive}, timeout())
   end
 
   @doc "Activates a job by name"
   @spec activate_job(expr) :: :ok
   def activate_job(n) do
-    GenServer.call(@quantum, {:change_state, n, :active}, timeout())
+    GenServer.call(quantum(), {:change_state, n, :active}, timeout())
   end
 
   @doc "Resolves a job by name"
@@ -62,24 +64,24 @@ defmodule Quantum do
   @doc "Deletes a job by name"
   @spec delete_job(expr) :: job
   def delete_job(name) do
-    GenServer.call(@quantum, {:delete, name}, timeout())
+    GenServer.call(quantum(), {:delete, name}, timeout())
   end
 
   @doc "Deletes all jobs"
   @spec delete_all_jobs :: :ok
   def delete_all_jobs do
-    GenServer.call(@quantum, {:delete_all}, timeout())
+    GenServer.call(quantum(), {:delete_all}, timeout())
   end
 
   @doc "Returns the list of currently defined jobs"
   @spec jobs :: [job]
   def jobs do
-    GenServer.call(@quantum, :jobs, timeout())
+    GenServer.call(quantum(), :jobs, timeout())
   end
 
   @doc "Starts Quantum process"
   def start_link(state) do
-    case GenServer.start_link(__MODULE__, state, [name: @quantum]) do
+    case GenServer.start_link(__MODULE__, state, [name: quantum()]) do
       {:ok, pid} ->
         {:ok, pid}
       {:error, {:already_started, pid}} ->
